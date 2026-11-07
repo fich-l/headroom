@@ -18,21 +18,27 @@
 
 ## Install
 
-Open **Terminal**, paste this line and press Return:
+1. **Open Terminal:** press **⌘ Command + Space**, type **Terminal** and press **Return**.
+   A window with a text prompt opens.
+2. **Copy this line** (the copy button appears at its right edge when you hover over it):
 
-```bash
-curl -fsSL https://github.com/fich-l/headroom/releases/latest/download/Headroom.zip -o /tmp/Headroom.zip && ditto -x -k /tmp/Headroom.zip /Applications && open /Applications/Headroom.app
-```
+   ```bash
+   curl -fsSL https://github.com/fich-l/headroom/releases/latest/download/Headroom.zip -o /tmp/Headroom.zip && ditto -x -k /tmp/Headroom.zip /Applications && open /Applications/Headroom.app
+   ```
 
-That's it: a ☀️ appears in the menu bar and your screen gets brighter.
+3. **Paste it into Terminal** with **⌘ Command + V** and press **Return**.
+
+Done: a sun appears in the menu bar at the top of the screen, and your display gets brighter.
+You can close Terminal now.
 
 <details>
 <summary>Prefer a normal download?</summary>
 
-1. Download **Headroom.zip** from [Releases](https://github.com/fich-l/headroom/releases/latest), open it
-   and drag **Headroom** into **Applications**.
-2. Open Headroom. macOS will warn that it can't check the app, because it's not from the App Store.
-   Go to **System Settings → Privacy & Security** and click **Open Anyway**. You only need to do this once.
+1. Download **Headroom.zip** from [Releases](https://github.com/fich-l/headroom/releases/latest).
+2. Double-click the file in your Downloads folder, then drag **Headroom** into **Applications**.
+3. Double-click **Headroom**. macOS says it can't check the app because it's not from the App Store.
+   Click **Done**, open **System Settings → Privacy & Security**, scroll down and click
+   **Open Anyway**. You only need to do this once.
 </details>
 
 ## Use
