@@ -1,0 +1,3 @@
+build/
+FlashTest/*.app/
+.DS_Store

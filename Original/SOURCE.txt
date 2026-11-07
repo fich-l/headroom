@@ -1,0 +1,1 @@
+starkdmi/BrightXDR @ 17b70ea — unmodified upstream sources (GPL-3)
