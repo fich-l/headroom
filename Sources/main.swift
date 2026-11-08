@@ -50,9 +50,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(NSMenuItem(title: "Quit Headroom", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         statusItem.menu = menu
 
-        // Starting the app means "boost on": the last level used (never Off), Medium by default.
+        // Restore the last level chosen, including Off; High on first launch.
         let saved = UserDefaults.standard.object(forKey: defaultsKey) as? Int ?? defaultLevel
-        setLevel(saved >= 1 && saved < levels.count ? saved : defaultLevel)
+        setLevel(saved >= 0 && saved < levels.count ? saved : defaultLevel)
 
     }
 
@@ -73,7 +73,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func selectLevel(_ sender: NSMenuItem) { setLevel(sender.tag) }
 
     private func setLevel(_ index: Int) {
-        if index > 0 { UserDefaults.standard.set(index, forKey: defaultsKey) }
+        UserDefaults.standard.set(index, forKey: defaultsKey)
         for item in levelItems { item.state = item.tag == index ? .on : .off }
         controller.boost = levels[index].boost
         let symbol = index == 0 ? "sun.min" : "sun.max.fill"
