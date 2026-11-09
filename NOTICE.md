@@ -44,6 +44,10 @@ The Headroom app itself (`Sources/`, built by `build.sh`) contains no GPL code.
 - Scaling the display's captured transfer table linearly by the gain ("Fix 1", the model Headroom
   ships), and falling back to an identity ramp when the reading is unusable.
 - Its README explained the overlay vs. gamma-table trade-offs.
+- `Sources/OverlayBoost.swift` (overlay mode for M5 Pro / M5 Max) follows its findings: the M5 Pro/Max
+  gamma-table bug and its detection by chip name, the shielding window level for the overlay,
+  presenting a few frames per second so WindowServer doesn't drop the overlay's compositing, and
+  not excluding a multiply overlay from capture. No code was copied.
 
 ### BrightIntosh — GPL-3.0
 <https://github.com/niklasr22/BrightIntosh> · read at commit `f6806b8`

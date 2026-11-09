@@ -54,7 +54,9 @@ instantly.
 - ✅ MacBook Pro 14" and 16" with M1 Pro/Max, M2 Pro/Max, M3 or M4 chips
 - ✅ Pro Display XDR
 - ⚠️ MacBook Pro with M5: untested
-- ❌ MacBook Pro with M5 Pro / M5 Max, MacBook Air, other displays
+- ✅ MacBook Pro with M5 Pro / M5 Max (overlay mode; tested on an M5 Max): the boost pauses briefly
+  while you switch Spaces or open Mission Control.
+- ❌ MacBook Air, other displays
 
 macOS 13 Ventura or later. Tested on a MacBook Pro 14" M4 with macOS 15.
 
@@ -71,7 +73,7 @@ macOS 13 Ventura or later. Tested on a MacBook Pro 14" M4 with macOS 15.
 | Price | **Free** | From about €10 |
 | Open source | ✅ | ❌ |
 | Brightness keys keep working | ✅ | ✅ |
-| M5 Pro / M5 Max | ❌ | ✅ |
+| M5 Pro / M5 Max | ✅ | ✅ |
 
 ## Credits
 

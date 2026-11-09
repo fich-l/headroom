@@ -10,6 +10,8 @@ import MetalKit
 // overlay, it can't be dropped during Space switches or Mission Control → no white screen,
 // and the boost stays on during the animations.
 // The table is per process: WindowServer restores it when the app quits or crashes.
+// On M5 Pro / M5 Max, macOS ignores the table; there the same trigger plus a full-screen
+// overlay does the boost instead (OverlayBoost.swift).
 //
 // Credits (details in NOTICE.md):
 //   - xdr-lift (MIT, © 2026 Yihan Zhu): 1×1 EDR trigger window setup (shielding level + 1,
@@ -18,22 +20,34 @@ import MetalKit
 //     falling back to an identity ramp for unusable readings.
 //   - BrightIntosh (GPL-3, niklasr22) was read as a reference; no code taken.
 
-/// 1×1 Metal view drawing an EDR value, so macOS keeps the panel's headroom open.
-final class EDRTriggerView: MTKView, MTKViewDelegate {
+/// Metal view showing one EDR colour from a 1×1 drawable (the compositor stretches it).
+/// Used for the 1×1 trigger pixel and for the full-screen overlay (OverlayBoost.swift).
+final class EDRView: MTKView, MTKViewDelegate {
     private let queue: MTLCommandQueue
 
-    init?(value: Double) {
+    var color: MTLClearColor { didSet { clearColor = color } }
+
+    /// Trigger pixel: an EDR value, so macOS keeps the panel's headroom open.
+    convenience init?(value: Double) {
+        self.init(frame: NSRect(x: 0, y: 0, width: 1, height: 1),
+                  color: MTLClearColor(red: value, green: value, blue: value, alpha: 1))
+    }
+
+    init?(frame: NSRect, color: MTLClearColor) {
         guard let device = MTLCreateSystemDefaultDevice(), let q = device.makeCommandQueue() else { return nil }
         queue = q
-        super.init(frame: NSRect(x: 0, y: 0, width: 1, height: 1), device: device)
+        self.color = color
+        super.init(frame: frame, device: device)
         colorPixelFormat = .rgba16Float
         colorspace = CGColorSpace(name: CGColorSpace.extendedLinearDisplayP3)
         autoResizeDrawable = false
         drawableSize = CGSize(width: 1, height: 1)
         (layer as? CAMetalLayer)?.wantsExtendedDynamicRangeContent = true
         layer?.isOpaque = false
-        clearColor = MTLClearColor(red: value, green: value, blue: value, alpha: 1)
-        preferredFramesPerSecond = 5 // EDR content that stops updating eventually stops counting
+        clearColor = color
+        // EDR content that stops updating eventually stops counting, and an idle overlay may be
+        // promoted to direct scan-out, which drops its compositing filter.
+        preferredFramesPerSecond = 5
         delegate = self
     }
 
@@ -68,13 +82,19 @@ final class GammaBooster {
         }
     }
 
+    /// Gamma table or overlay; fixed for the lifetime of the booster.
+    let method: BoostMethod
+    private let overlayStyle = OverlayStyle.current
+
     private var triggers: [NSWindow] = []
+    private var overlays: [(window: NSWindow, view: EDRView)] = []
     private var bases: [CGDirectDisplayID: Table] = [:]
     private var timer: Timer?
     private var builtSignature = ""
     private var pendingRebuild: DispatchWorkItem?
 
-    init() {
+    init(method: BoostMethod = .gamma) {
+        self.method = method
         let ws = NSWorkspace.shared.notificationCenter
         ws.addObserver(self, selector: #selector(scheduleRebuild), name: NSWorkspace.screensDidWakeNotification, object: nil)
         ws.addObserver(self, selector: #selector(scheduleRebuild), name: NSWorkspace.didWakeNotification, object: nil)
@@ -100,28 +120,44 @@ final class GammaBooster {
     private func tearDown() {
         timer?.invalidate(); timer = nil
         triggers.forEach { $0.orderOut(nil) }
-        let hadTable = !triggers.isEmpty
+        overlays.forEach { $0.window.orderOut(nil) }
+        let hadTable = method == .gamma && !triggers.isEmpty
         triggers.removeAll()
+        overlays.removeAll()
         bases.removeAll()
         if hadTable { CGDisplayRestoreColorSyncSettings() }
     }
 
     private func start() {
         tearDown()
-        CGDisplayRestoreColorSyncSettings() // read the plain profile table, never a boosted one
         builtSignature = layoutSignature
-        for screen in Self.xdrScreens {
-            guard let id = Self.displayID(screen) else { continue }
-            bases[id] = Self.plainTable(id)
-            triggers.append(Self.makeTrigger(on: screen))
+        switch method {
+        case .gamma:
+            CGDisplayRestoreColorSyncSettings() // read the plain profile table, never a boosted one
+            for screen in Self.xdrScreens {
+                guard let id = Self.displayID(screen) else { continue }
+                bases[id] = Self.plainTable(id)
+                triggers.append(Self.makeTrigger(on: screen))
+            }
+            write()
+            // ColorSync, display reconfiguration or other apps may reset the table: re-assert it.
+            timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in self?.write() }
+        case .overlay:
+            let gain = OverlayBoost.gain(for: boost)
+            for screen in Self.xdrScreens {
+                if let o = OverlayBoost.makeWindow(on: screen, style: overlayStyle, gain: gain) { overlays.append(o) }
+                triggers.append(Self.makeTrigger(on: screen)) // above the overlay
+            }
         }
-        write()
-        // ColorSync, display reconfiguration or other apps may reset the table: re-assert it.
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in self?.write() }
     }
 
     private func write() {
         guard boost > 1.0 else { return }
+        if method == .overlay {
+            let color = overlayStyle.color(gain: OverlayBoost.gain(for: boost))
+            overlays.forEach { $0.view.color = color }
+            return
+        }
         for (id, base) in bases {
             let f = { [model, boost] (v: Float) in model(v, boost) }
             var r = base.r.map(f), g = base.g.map(f), b = base.b.map(f)
@@ -156,7 +192,7 @@ final class GammaBooster {
         w.isReleasedWhenClosed = false
         w.animationBehavior = .none
         w.sharingType = .none
-        if let v = EDRTriggerView(value: 2.0) { w.contentView = v }
+        if let v = EDRView(value: 2.0) { w.contentView = v }
         w.orderFrontRegardless()
         return w
     }

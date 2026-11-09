@@ -15,7 +15,7 @@ FLAGS=(-module-cache-path "$WORK/modcache")
 OVERLAY=$(Support/make_overlay.sh "$PWD/Support" "$WORK/vfs.yaml")
 [[ -n "$OVERLAY" ]] && FLAGS+=(-vfsoverlay "$OVERLAY" -Xcc -ivfsoverlay -Xcc "$OVERLAY")
 
-SRC=(Sources/Gamma.swift Compare/Overlay.swift Compare/main.swift Compare/GammaSpec.swift Compare/Original/MetalView.swift)
+SRC=(Sources/Gamma.swift Sources/OverlayBoost.swift Compare/Overlay.swift Compare/main.swift Compare/GammaSpec.swift Compare/Original/MetalView.swift)
 echo "→ Compiling"
 swiftc "${FLAGS[@]}" -O -target arm64-apple-macos13.0 -o "$WORK/a" $SRC
 swiftc "${FLAGS[@]}" -O -target x86_64-apple-macos13.0 -o "$WORK/x" $SRC
