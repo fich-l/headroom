@@ -2,7 +2,7 @@ import Cocoa
 import ServiceManagement
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
-    private let controller = GammaBooster()
+    private let controller = GammaBooster(method: BoostMethod.current)
     private var statusItem: NSStatusItem!
     private var levelItems: [NSMenuItem] = []
     private var loginItem: NSMenuItem!
@@ -31,6 +31,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let warn = NSMenuItem(title: "No XDR display detected", action: nil, keyEquivalent: "")
             warn.isEnabled = false
             menu.addItem(warn)
+        }
+        if controller.method == .overlay {
+            // macOS ignores gamma tables on M5 Pro / M5 Max: the overlay pauses during Space switches.
+            let note = NSMenuItem(title: "Overlay mode (M5 Pro / M5 Max)", action: nil, keyEquivalent: "")
+            note.isEnabled = false
+            menu.addItem(note)
         }
         menu.addItem(.separator())
 

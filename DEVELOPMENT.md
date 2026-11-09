@@ -31,6 +31,36 @@ while it switches Spaces and opens Mission Control.
 
 The look was then compared with the original BrightXDR side by side in the A/B app (below).
 
+## Overlay mode (M5 Pro / M5 Max)
+
+On M5 Pro and M5 Max, macOS ignores the gamma table: `CGSetDisplayTransferByTable` succeeds and
+reads back correctly, but nothing changes on screen (Apple FB22273730, documented by Illuminate).
+It can't be detected at runtime, so Headroom checks the chip name (`machdep.cpu.brand_string`)
+and uses an overlay there (`Sources/OverlayBoost.swift`). Tested on a MacBook Pro M5 Max: boost
+works, no white flash (short pause during Space switches), normal screenshots, no effect on
+streaming video or external displays.
+
+- The same 1×1 trigger pixel keeps the EDR headroom open.
+- A full-screen window per XDR display (shielding level, click-through, left out of screenshots)
+  shows a 1×1 rgba16Float drawable with colour 0 and alpha 1 − f. Source-over gives f × the
+  content beneath. This is the lab's "negative alpha" variant: during Space switches and Mission
+  Control the snapshot clamps alpha to 0…1, so the overlay becomes transparent (boost paused)
+  instead of white.
+- The overlay multiplies linear light, the gamma table encoded values. Overlay gain =
+  level ^ 1.7, so High (1.5625) gives about 2.1×.
+
+Settings for testing (restart Headroom after a change; `defaults delete de.fichl.Headroom <key>`
+restores the default):
+
+```bash
+defaults write de.fichl.Headroom method overlay              # or gamma; default: by chip
+defaults write de.fichl.Headroom overlayStyle negAlpha       # or negAlphaMultiply, multiply
+defaults write de.fichl.Headroom overlayExponent -float 1.7  # overlay gain = level ^ exponent
+```
+
+`multiply` is BrightXDR's overlay (colour f, multiply filter) and flashes white during Space
+switches; it's only there as a last resort if negative alpha doesn't boost on some Mac.
+
 ## Build from source
 
 Only the free **Xcode Command Line Tools** are needed (`xcode-select --install`):
@@ -73,4 +103,5 @@ used when needed.
 - Apps that also change the display's gamma table (for example f.lux) conflict with Headroom.
 - HDR content is limited to the boosted range while Headroom is on.
 - Screenshots and screen recordings don't include the gamma table, so they don't show the boost.
-- macOS ignores gamma tables on M5 Pro / M5 Max, so Headroom can't work there.
+- macOS ignores gamma tables on M5 Pro / M5 Max, so Headroom uses the overlay mode there: the boost
+  pauses briefly during Space switches and Mission Control.
